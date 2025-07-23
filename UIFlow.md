@@ -1,0 +1,21 @@
+- Đặc tả
+    - list tương ứng với danh sách công việc trong 1 đồ án (thời gian dài)
+    - 1 list gồm nhiều task, mỗi task có thể có thể nhiều step
+    - Có thể tạo task riêng lẻ, task không bắt buộc phải nằm trong list
+    - Người dùng muốn hiển thị lịch, những ngày có deadline sẽ được làm nổi bật
+    - Ở trang chính, người dùng có thể xem nhanh các task sắp đến hạn
+    - Xem các task ở từng list theo dạng lưới, dạng danh sách hoặc dạng board (kanban, theo trạng thái)
+    - Người dùng cũng muốn 1 trang để AI đề xuất các task cần làm trong ngày, nếu AI service chưa được xây dựng kịp thì người dùng cũng có thể thêm task vào danh sách các task cần làm trong ngày khi vào xem chi tiết từng list
+- Giao diện dự kiến
+    - Thanh điều hướng bên trái với các mục:
+        - My Day: Hiển thị các task cần làm trong ngày, có thể được AI đề xuất
+        - Calendar: Hiển thị lịch với các ngày có deadline được làm nổi bật
+        - Unlisted Tasks: Hiển thị các task không thuộc list nào
+        - Lists: Hiển thị danh sách các list công việc
+        - Settings: Cài đặt ứng dụng
+    - Các trang tính năng chính:
+        - My Day: Hiển thị các task cần làm trong ngày, có thể được AI đề xuất
+        - Calendar: Hiển thị lịch với các ngày có deadline được làm nổi bật
+        - Unlisted Tasks: Hiển thị các task không thuộc list nào
+        - Lists: Hiển thị danh sách các list công việc, có thể xem theo dạng lưới, danh sách hoặc board (kanban)
+        - Settings: Cài đặt ứng dụng
