@@ -7,45 +7,45 @@ import AppLayout from '@/components/AppLayout';
 // Mock data for demonstration
 const mockTasksWithDeadlines: Task[] = [
   {
-    id: '1',
-    title: 'Project Review Meeting',
-    description: 'Review Q1 project outcomes',
+    taskId: '1',
+    taskTitle: 'Project Review Meeting',
+    taskDescription: 'Review Q1 project outcomes',
     deadline: new Date(2025, 6, 20), // July 20, 2025
-    status: 'todo',
-    priority: 'high',
+    taskStatus: 'todo',
+    taskPriority: 'high',
     steps: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: '2',
-    title: 'Submit Monthly Report',
-    description: 'Compile and submit monthly performance report',
+    taskId: '2',
+    taskTitle: 'Submit Monthly Report',
+    taskDescription: 'Compile and submit monthly performance report',
     deadline: new Date(2025, 6, 25), // July 25, 2025
-    status: 'in-progress',
-    priority: 'medium',
+    taskStatus: 'in-progress',
+    taskPriority: 'medium',
     steps: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: '3',
-    title: 'Client Presentation',
-    description: 'Present new features to client',
+    taskId: '3',
+    taskTitle: 'Client Presentation',
+    taskDescription: 'Present new features to client',
     deadline: new Date(2025, 6, 15), // July 15, 2025 (overdue)
-    status: 'todo',
-    priority: 'high',
+    taskStatus: 'todo',
+    taskPriority: 'high',
     steps: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: '4',
-    title: 'Code Review',
-    description: 'Review team member\'s pull request',
+    taskId: '4',
+    taskTitle: 'Code Review',
+    taskDescription: 'Review team member\'s pull request',
     deadline: new Date(2025, 6, 18), // July 18, 2025
-    status: 'completed',
-    priority: 'medium',
+    taskStatus: 'completed',
+    taskPriority: 'medium',
     steps: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -54,21 +54,21 @@ const mockTasksWithDeadlines: Task[] = [
 
 export default function CalendarPage() {
   const tasksWithDeadlines = mockTasksWithDeadlines.map(task => ({
-    id: task.id,
-    title: task.title,
+    id: task.taskId,
+    title: task.taskTitle,
     deadline: task.deadline!,
-    status: task.status,
+    status: task.taskStatus,
   }));
 
   const upcomingDeadlines = mockTasksWithDeadlines
-    .filter(task => task.deadline && task.status !== 'completed')
+    .filter(task => task.deadline && task.taskStatus !== 'completed')
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5);
 
   const overdueCount = mockTasksWithDeadlines.filter(task => 
     task.deadline && 
     new Date(task.deadline) < new Date() && 
-    task.status !== 'completed'
+    task.taskStatus !== 'completed'
   ).length;
 
   return (
@@ -171,7 +171,7 @@ export default function CalendarPage() {
 
                 return (
                   <div
-                    key={task.id}
+                    key={task.taskId}
                     className={`
                       p-3 rounded-lg border
                       ${isOverdue 
@@ -184,18 +184,18 @@ export default function CalendarPage() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <h4 className="font-medium text-gray-900 dark:text-white text-sm">
-                        {task.title}
+                        {task.taskTitle}
                       </h4>
                       <span className={`
                         text-xs px-2 py-1 rounded-full font-medium
-                        ${task.priority === 'high' 
+                        ${task.taskPriority === 'high' 
                           ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                          : task.priority === 'medium'
+                          : task.taskPriority === 'medium'
                           ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                           : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                         }
                       `}>
-                        {task.priority}
+                        {task.taskPriority}
                       </span>
                     </div>
                     

@@ -8,12 +8,12 @@ import { Task } from '@/types';
 // Mock data for demonstration
 const mockMyDayTasks: Task[] = [
   {
-    id: '1',
-    title: 'Review project proposal',
-    description: 'Review and provide feedback on the new project proposal',
+    taskId: '1',
+    taskTitle: 'Review project proposal',
+    taskDescription: 'Review and provide feedback on the new project proposal',
     deadline: new Date(),
-    status: 'todo',
-    priority: 'high',
+    taskStatus: 'todo',
+    taskPriority: 'high',
     steps: [
       { id: '1-1', title: 'Read document', completed: true, createdAt: new Date() },
       { id: '1-2', title: 'Analyze requirements', completed: false, createdAt: new Date() },
@@ -23,12 +23,12 @@ const mockMyDayTasks: Task[] = [
     updatedAt: new Date(),
   },
   {
-    id: '2',
-    title: 'Finish UI components',
-    description: 'Complete the remaining UI components for the dashboard',
+    taskId: '2',
+    taskTitle: 'Finish UI components',
+    taskDescription: 'Complete the remaining UI components for the dashboard',
     deadline: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-    status: 'in-progress',
-    priority: 'medium',
+    taskStatus: 'in-progress',
+    taskPriority: 'medium',
     steps: [
       { id: '2-1', title: 'Create TaskCard component', completed: true, createdAt: new Date() },
       { id: '2-2', title: 'Create Calendar component', completed: true, createdAt: new Date() },
@@ -45,25 +45,25 @@ export default function MyDayPage() {
   const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
-        task.id === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
+        task.taskId === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
       )
     );
   };
 
   const handleTaskDelete = (taskId: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    setTasks(prevTasks => prevTasks.filter(task => task.taskId !== taskId));
   };
 
   const handleToggleStatus = (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find(t => t.taskId === taskId);
     if (task) {
-      const newStatus = task.status === 'completed' ? 'todo' : 'completed';
-      handleTaskUpdate(taskId, { status: newStatus });
+      const newStatus = task.taskStatus === 'completed' ? 'todo' : 'completed';
+      handleTaskUpdate(taskId, { taskStatus: newStatus });
     }
   };
 
-  const upcomingTasks = tasks.filter(task => task.status !== 'completed');
-  const completedTasks = tasks.filter(task => task.status === 'completed');
+  const upcomingTasks = tasks.filter(task => task.taskStatus !== 'completed');
+  const completedTasks = tasks.filter(task => task.taskStatus === 'completed');
 
   return (
     <AppLayout>
@@ -185,7 +185,7 @@ export default function MyDayPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {upcomingTasks.map((task) => (
                 <TaskCard
-                  key={task.id}
+                  key={task.taskId}
                   task={task}
                   onEdit={(task) => console.log('Edit task:', task)}
                   onDelete={handleTaskDelete}
@@ -209,7 +209,7 @@ export default function MyDayPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {completedTasks.map((task) => (
                 <TaskCard
-                  key={task.id}
+                  key={task.taskId}
                   task={task}
                   onEdit={(task) => console.log('Edit task:', task)}
                   onDelete={handleTaskDelete}

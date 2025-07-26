@@ -5,412 +5,283 @@ import TaskCard from '@/components/TaskCard';
 import ViewToggle from '@/components/ViewToggle';
 import KanbanBoard from '@/components/KanbanBoard';
 import CreateListModal from '@/components/CreateListModal';
+import TaskCreationCard from '@/components/TaskCreationCard';
 import { Task, List, ViewMode } from '@/types';
-import { CreateListRequest } from '@/types/api-request-body';
+import { CreateListRequest, CreateTaskRequest, ListFilterObject, TaskFilterObject } from '@/types/api-request-body';
 import AppLayout from '@/components/AppLayout';
+import { useApi } from '@/contexts/ApiContext';
+import { colorUtils } from '@/utils/color-utils';
+import { useQuery } from '@/hooks/use-query';
+import { useFetchList } from '@/hooks/use-fetch-list';
+import { toast } from 'sonner';
 
-// Mock data for lists and tasks
-const mockLists: List[] = [
-  {
-    id: 'list1',
-    title: 'Web Development Project',
-    description: 'Frontend redesign and new features implementation',
-    listCategory: 'WORK',
-    color: 'blue',
-    tasks: [
-      {
-        id: 'l1-t1',
-        title: 'Create responsive navigation',
-        description: 'Design and implement mobile-first navigation',
-        deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-        status: 'in-progress',
-        priority: 'high',
-        listId: 'list1',
-        steps: [
-          { id: 'l1-t1-s1', title: 'Design mockup', completed: true, createdAt: new Date() },
-          { id: 'l1-t1-s2', title: 'Code HTML structure', completed: true, createdAt: new Date() },
-          { id: 'l1-t1-s3', title: 'Add CSS styling', completed: false, createdAt: new Date() },
-          { id: 'l1-t1-s4', title: 'Add JavaScript interactions', completed: false, createdAt: new Date() },
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'l1-t2',
-        title: 'Implement user authentication',
-        description: 'Add login and registration functionality',
-        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'high',
-        listId: 'list1',
-        steps: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'l1-t3',
-        title: 'Set up database schema',
-        description: 'Design and implement database structure',
-        status: 'completed',
-        priority: 'medium',
-        listId: 'list1',
-        steps: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'list2',
-    title: 'Marketing Campaign',
-    description: 'Q3 marketing campaign planning and execution',
-    listCategory: 'WORK',
-    color: 'green',
-    tasks: [
-      {
-        id: 'l2-t1',
-        title: 'Create social media content',
-        description: 'Design posts for Instagram, Twitter, and LinkedIn',
-        deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'medium',
-        listId: 'list2',
-        steps: [
-          { id: 'l2-t1-s1', title: 'Brainstorm content ideas', completed: true, createdAt: new Date() },
-          { id: 'l2-t1-s2', title: 'Create graphics', completed: false, createdAt: new Date() },
-          { id: 'l2-t1-s3', title: 'Write captions', completed: false, createdAt: new Date() },
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'l2-t2',
-        title: 'Plan email campaign',
-        description: 'Design and schedule email marketing sequence',
-        deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-        status: 'in-progress',
-        priority: 'medium',
-        listId: 'list2',
-        steps: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'list3',
-    title: 'Learning Goals',
-    listCategory: 'PERSONAL',
-    description: 'Personal development and skill improvement',
-    color: 'purple',
-    tasks: [
-      {
-        id: 'l3-t1',
-        title: 'Complete React course',
-        description: 'Finish advanced React patterns course',
-        deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-        status: 'in-progress',
-        priority: 'low',
-        listId: 'list3',
-        steps: [
-          { id: 'l3-t1-s1', title: 'Watch video lectures', completed: true, createdAt: new Date() },
-          { id: 'l3-t1-s2', title: 'Complete exercises', completed: false, createdAt: new Date() },
-          { id: 'l3-t1-s3', title: 'Build final project', completed: false, createdAt: new Date() },
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
 
-export default function ListsPage() {
-  const [lists, setLists] = useState<List[]>(mockLists);
-  const [selectedList, setSelectedList] = useState<List | null>(null);
+interface ListTasksViewProps {
+  selectedList: List;
+  onBack: () => void;
+}
+
+function ListTasksView({selectedList, onBack}: ListTasksViewProps) {
+  const { taskService } = useApi();
+
+  const {query: taskQuery} = useQuery<TaskFilterObject>({
+    currentPage: 1,
+    pageSize: 10,
+    listId: selectedList.listId,
+    sortBy: 'createdAt',
+    sortDirection: 'DESC',
+  });
+  const {data: tasks, totalPages, addToList} = useFetchList<TaskFilterObject, Task>('task', taskQuery);
   const [currentView, setCurrentView] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
     if (!selectedList) return;
-
-    setLists(prevLists =>
-      prevLists.map(list =>
-        list.id === selectedList.id
-          ? {
-              ...list,
-              tasks: list.tasks.map(task =>
-                task.id === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
-              ),
-              updatedAt: new Date(),
-            }
-          : list
-      )
-    );
-
-    // Update selectedList to reflect changes immediately
-    setSelectedList(prev => prev ? {
-      ...prev,
-      tasks: prev.tasks.map(task =>
-        task.id === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
-      ),
-      updatedAt: new Date(),
-    } : null);
   };
 
   const handleTaskDelete = (taskId: string) => {
     if (!selectedList) return;
-
-    setLists(prevLists =>
-      prevLists.map(list =>
-        list.id === selectedList.id
-          ? {
-              ...list,
-              tasks: list.tasks.filter(task => task.id !== taskId),
-              updatedAt: new Date(),
-            }
-          : list
-      )
-    );
-
-    setSelectedList(prev => prev ? {
-      ...prev,
-      tasks: prev.tasks.filter(task => task.id !== taskId),
-      updatedAt: new Date(),
-    } : null);
   };
 
   const handleToggleStatus = (taskId: string) => {
     if (!selectedList) return;
 
-    const task = selectedList.tasks.find(t => t.id === taskId);
+    const task = selectedList.tasks?.find(t => t.taskId === taskId);
     if (task) {
-      const newStatus = task.status === 'completed' ? 'todo' : 'completed';
-      handleTaskUpdate(taskId, { status: newStatus });
+      const newStatus = task.taskStatus === 'COMPLETED' ? 'TODO' : 'COMPLETED';
+      handleTaskUpdate(taskId, { taskStatus: newStatus });
     }
   };
 
-  const handleCreateList = async (data: CreateListRequest) => {
-    // Generate a new list ID
-    const newListId = `list-${Date.now()}`;
-    
-    // Create new list object
-    const newList: List = {
-      id: newListId,
-      title: data.listTitle,
-      description: data.listDescription || '',
-      listCategory: data.listCategory,
-      color: data.color || 'blue',
-      tasks: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    // Add to lists
-    setLists(prevLists => [...prevLists, newList]);
-    
-    // Here you would typically make an API call
-    // await createListAPI(data);
+  const handleCreateTask = async (request: CreateTaskRequest) => {
+    try {
+      const newTask = (await taskService.createTask(request)).data;
+      addToList(newTask);
+      toast.success('Task created successfully');
+    }
+    catch (error) {
+      toast.error(`Failed to create task: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
-  const filteredTasks = selectedList?.tasks.filter(task =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTasks = tasks?.filter(task =>
+    task.taskTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    task.taskDescription?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  const getColorClass = (color: string) => {
-    const colors = {
-      blue: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300',
-      green: 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-300',
-      purple: 'bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900 dark:border-purple-700 dark:text-purple-300',
-      red: 'bg-red-100 border-red-300 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-300',
-      yellow: 'bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900 dark:border-yellow-700 dark:text-yellow-300',
-    };
-    return colors[color as keyof typeof colors] || colors.blue;
+  const listStats = {
+    total: tasks?.length,
+    todo: tasks?.filter(t => t.taskStatus === 'TODO').length,
+    inProgress: tasks?.filter(t => t.taskStatus === 'IN_PROGRESS').length,
+    completed: tasks?.filter(t => t.taskStatus === 'COMPLETED').length,
   };
 
-  if (selectedList) {
-    const listStats = {
-      total: selectedList.tasks.length,
-      todo: selectedList.tasks.filter(t => t.status === 'todo').length,
-      inProgress: selectedList.tasks.filter(t => t.status === 'in-progress').length,
-      completed: selectedList.tasks.filter(t => t.status === 'completed').length,
-    };
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={onBack}
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          
+          <div>
+            <div className="flex items-center space-x-3 mb-2">
+              <div className={`w-4 h-4 rounded-full ${selectedList.color === 'blue' ? 'bg-blue-500' : selectedList.color === 'green' ? 'bg-green-500' : 'bg-purple-500'}`}></div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                {selectedList.listTitle}
+              </h1>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400">
+              {selectedList.listDescription}
+            </p>
+          </div>
+        </div>
+      </div>
 
-    return (
-      <AppLayout>
-        <div className="p-6 max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setSelectedList(null)}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{listStats.total}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-gray-500 dark:text-gray-400">{listStats.todo}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">To Do</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{listStats.inProgress}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{listStats.completed}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="relative min-w-80">
+          <svg className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search tasks in this list..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <ViewToggle currentView={currentView} onViewChange={setCurrentView} />
+      </div>
+
+      {/* Tasks Display */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        {filteredTasks.length === 0 ? (
+          <div className="text-center py-12">
+            {searchQuery ? (
+              <>
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-              </button>
-              
-              <div>
-                <div className="flex items-center space-x-3 mb-2">
-                  <div className={`w-4 h-4 rounded-full ${selectedList.color === 'blue' ? 'bg-blue-500' : selectedList.color === 'green' ? 'bg-green-500' : 'bg-purple-500'}`}></div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {selectedList.title}
-                  </h1>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {selectedList.description}
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  No tasks found
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Try adjusting your search criteria.
                 </p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span>Add Task</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{listStats.total}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-500 dark:text-gray-400">{listStats.todo}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">To Do</p>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{listStats.inProgress}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{listStats.completed}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div className="relative min-w-80">
-              <svg className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search tasks in this list..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <ViewToggle currentView={currentView} onViewChange={setCurrentView} />
-          </div>
-
-          {/* Tasks Display */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            {filteredTasks.length === 0 ? (
-              <div className="text-center py-12">
-                {searchQuery ? (
-                  <>
-                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      No tasks found
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                      Try adjusting your search criteria.
-                    </p>
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-                    >
-                      Clear search
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      No tasks in this list
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                      Add tasks to get started with this project.
-                    </p>
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                      Add First Task
-                    </button>
-                  </>
-                )}
-              </div>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                >
+                  Clear search
+                </button>
+              </>
             ) : (
               <>
-                {currentView === 'kanban' ? (
-                  <KanbanBoard
-                    tasks={filteredTasks}
-                    onTaskUpdate={handleTaskUpdate}
-                    onTaskEdit={(task) => console.log('Edit task:', task)}
-                    onTaskDelete={handleTaskDelete}
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  No tasks in this list
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Add tasks to get started with this project.
+                </p>
+                
+                {/* Task Creation Card for empty state */}
+                <div className="max-w-md mx-auto">
+                  <TaskCreationCard
+                    onSubmit={handleCreateTask}
+                    listId={selectedList.listId}
                   />
-                ) : currentView === 'grid' ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredTasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        onEdit={(task) => console.log('Edit task:', task)}
-                        onDelete={handleTaskDelete}
-                        onToggleStatus={handleToggleStatus}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {filteredTasks.map((task) => (
-                      <div key={task.id} className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <TaskCard
-                          task={task}
-                          onEdit={(task) => console.log('Edit task:', task)}
-                          onDelete={handleTaskDelete}
-                          onToggleStatus={handleToggleStatus}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                </div>
               </>
             )}
           </div>
-        </div>
+        ) : (
+          <>
+            {currentView === 'kanban' ? (
+              <KanbanBoard
+                tasks={filteredTasks}
+                onTaskUpdate={handleTaskUpdate}
+                onTaskEdit={(task) => console.log('Edit task:', task)}
+                onTaskDelete={handleTaskDelete}
+                onTaskCreate={handleCreateTask}
+              />
+            ) : currentView === 'grid' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                
+                {filteredTasks.map((task) => (
+                  <TaskCard
+                    key={task.taskId}
+                    task={task}
+                    onEdit={(task) => console.log('Edit task:', task)}
+                    onDelete={handleTaskDelete}
+                    onToggleStatus={handleToggleStatus}
+                  />
+                ))}
+                {/* Add Task Card - Shows last in grid */}
+                <TaskCreationCard
+                  onSubmit={handleCreateTask}
+                  listId={selectedList.listId}
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">                
+                {filteredTasks.map((task) => (
+                  <div key={task.taskId} className="border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <TaskCard
+                      task={task}
+                      onEdit={(task) => console.log('Edit task:', task)}
+                      onDelete={handleTaskDelete}
+                      onToggleStatus={handleToggleStatus}
+                    />
+                  </div>
+                ))}
+
+                {/* Add Task Card - Shows last in list */}
+                <TaskCreationCard
+                  onSubmit={handleCreateTask}
+                  listId={selectedList.listId}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function ListsPage() {
+  const {listService} = useApi();
+  const {query: listQuery, updateQuery, resetQuery } = useQuery<ListFilterObject>({
+    currentPage: 1,
+    pageSize: 10,
+    sortBy: 'createdAt',
+    sortDirection: 'DESC',
+  });
+  const {data: lists, totalPages} = useFetchList<ListFilterObject, List>('list', listQuery);
+  const [selectedList, setSelectedList] = useState<List | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const handleCreateList = async (request: CreateListRequest) => {
+    const newList = (await listService.createList(request)).data;
+    
+    lists.push(newList);
+    
+  };
+
+  // Nếu có list được chọn, hiển thị ListTasksView
+  if (selectedList) {
+    return (
+      <AppLayout>
+        <ListTasksView
+          selectedList={selectedList}
+          onBack={() => setSelectedList(null)}
+        />
       </AppLayout>
     );
   }
 
-  const totalTasks = lists.reduce((sum, list) => sum + list.tasks.length, 0);
-  const completedTasks = lists.reduce((sum, list) => sum + list.tasks.filter(t => t.status === 'completed').length, 0);
+  const totalTasks = lists.reduce((sum, list) => sum + (list.tasks?.length || 0), 0);
+  const completedTasks = lists.reduce((sum, list) => sum + (list.tasks?.filter(t => t.taskStatus === 'COMPLETED').length || 0), 0);
 
   return (
     <AppLayout>
@@ -489,41 +360,38 @@ export default function ListsPage() {
         {/* Lists Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {lists.map((list) => {
-            const completedInList = list.tasks.filter(t => t.status === 'completed').length;
-            const progressPercentage = list.tasks.length > 0 ? (completedInList / list.tasks.length) * 100 : 0;
-
             return (
               <div
-                key={list.id}
+                key={list.listId}
                 onClick={() => setSelectedList(list)}
                 className={`
                   cursor-pointer rounded-lg border-2 p-6 transition-all duration-200 hover:shadow-lg
-                  ${getColorClass(list.color || 'blue')}
+                  ${colorUtils.getColorClassByHex(list.color || '#f0f0f0')}
                 `}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-2">{list.title}</h3>
-                    <p className="text-sm opacity-80 line-clamp-2">{list.description}</p>
+                    <h3 className="text-lg font-semibold mb-2">{list.listTitle}</h3>
+                    <p className="text-sm opacity-80 line-clamp-2">{list.listDescription}</p>
                   </div>
-                  <div className={`w-3 h-3 rounded-full ${list.color === 'blue' ? 'bg-blue-500' : list.color === 'green' ? 'bg-green-500' : 'bg-purple-500'}`}></div>
+                  <div className={`w-3 h-3 rounded-full ${colorUtils.getColorClassByHex(list.color || '#f0f0f0')}`}></div>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span>Progress</span>
-                    <span>{completedInList}/{list.tasks.length} tasks</span>
+                    <span>{list.completedTasksCount}/{list.totalTasksCount} tasks</span>
                   </div>
 
                   <div className="w-full bg-white/30 rounded-full h-2">
                     <div 
                       className="bg-white/60 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${progressPercentage}%` }}
+                      style={{ width: `${list.progressPercentage}%` }}
                     ></div>
                   </div>
 
                   <div className="flex justify-between items-center text-sm">
-                    <span>{Math.round(progressPercentage)}% complete</span>
+                    <span>{Math.round(list.progressPercentage || 0)}% complete</span>
                     <span className="opacity-70">
                       Updated {new Date(list.updatedAt).toLocaleDateString()}
                     </span>
@@ -580,3 +448,4 @@ export default function ListsPage() {
     </AppLayout>
   );
 }
+

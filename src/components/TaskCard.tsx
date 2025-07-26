@@ -17,21 +17,21 @@ const TaskCard: React.FC<TaskCardProps> = ({
   showList = false 
 }) => {
   const priorityColors = {
-    low: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-    high: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    LOW: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    MEDIUM: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    HIGH: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
   };
 
   const statusColors = {
-    todo: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-    'in-progress': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    TODO: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+    IN_PROGRESS: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
   };
 
-  const completedSteps = task.steps.filter(step => step.completed).length;
-  const progressPercentage = task.steps.length > 0 ? (completedSteps / task.steps.length) * 100 : 0;
+  const completedSteps = task.steps?.filter(step => step.completed).length;
+  const progressPercentage = task.steps?.length > 0 ? (completedSteps / task.steps.length) * 100 : 0;
 
-  const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'completed';
+  const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.taskStatus !== 'COMPLETED';
 
   return (
     <div className={`
@@ -44,13 +44,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <div className="flex-1">
           <h3 className={`
             font-semibold text-gray-900 dark:text-white mb-1
-            ${task.status === 'completed' ? 'line-through text-gray-500' : ''}
+            ${task.taskStatus === 'COMPLETED' ? 'line-through text-gray-500' : ''}
           `}>
-            {task.title}
+            {task.taskTitle}
           </h3>
-          {task.description && (
+          {task.taskDescription && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              {task.description}
+              {task.taskDescription}
             </p>
           )}
         </div>
@@ -58,11 +58,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
         {/* Actions */}
         <div className="flex space-x-1 ml-2">
           <button
-            onClick={() => onToggleStatus?.(task.id)}
+            onClick={() => onToggleStatus?.(task.taskId)}
             className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            title={task.status === 'completed' ? 'Mark as incomplete' : 'Mark as complete'}
+            title={task.taskStatus === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete'}
           >
-            {task.status === 'completed' ? (
+            {task.taskStatus === 'COMPLETED' ? (
               <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
@@ -84,7 +84,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           </button>
           
           <button
-            onClick={() => onDelete?.(task.id)}
+            onClick={() => onDelete?.(task.taskId)}
             className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
             title="Delete task"
           >
@@ -96,7 +96,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       </div>
 
       {/* Progress bar (if has steps) */}
-      {task.steps.length > 0 && (
+      {task.steps?.length > 0 && (
         <div className="mb-3">
           <div className="flex justify-between items-center mb-1">
             <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -117,12 +117,12 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
       {/* Tags and metadata */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className={`px-2 py-1 rounded-full font-medium ${priorityColors[task.priority]}`}>
-          {task.priority}
+        <span className={`px-2 py-1 rounded-full font-medium ${priorityColors[task.taskPriority]}`}>
+          {task.taskPriority}
         </span>
         
-        <span className={`px-2 py-1 rounded-full font-medium ${statusColors[task.status]}`}>
-          {task.status.replace('-', ' ')}
+        <span className={`px-2 py-1 rounded-full font-medium ${statusColors[task.taskStatus]}`}>
+          {task.taskStatus.replace('-', ' ')}
         </span>
 
         {task.deadline && (

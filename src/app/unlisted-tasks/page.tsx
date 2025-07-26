@@ -6,16 +6,20 @@ import ViewToggle from '@/components/ViewToggle';
 import KanbanBoard from '@/components/KanbanBoard';
 import { Task, ViewMode } from '@/types';
 import AppLayout from '@/components/AppLayout';
+import TaskCreationCard from '@/components/TaskCreationCard';
+import { useApi } from '@/contexts/ApiContext';
+import { CreateTaskRequest } from '@/types/api-request-body';
+import { toast } from 'sonner';
 
 // Mock data for unlisted tasks
 const mockUnlistedTasks: Task[] = [
   {
-    id: 'u1',
-    title: 'Learn new programming language',
-    description: 'Explore Rust programming language fundamentals',
+    taskId: 'u1',
+    taskTitle: 'Learn new programming language',
+    taskDescription: 'Explore Rust programming language fundamentals',
     deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next week
-    status: 'todo',
-    priority: 'medium',
+    taskStatus: 'TODO',
+    taskPriority: 'MEDIUM',
     steps: [
       { id: 'u1-1', title: 'Install Rust', completed: true, createdAt: new Date() },
       { id: 'u1-2', title: 'Read documentation', completed: false, createdAt: new Date() },
@@ -25,11 +29,11 @@ const mockUnlistedTasks: Task[] = [
     updatedAt: new Date(),
   },
   {
-    id: 'u2',
-    title: 'Organize desk workspace',
-    description: 'Clean and organize the home office desk',
-    status: 'in-progress',
-    priority: 'low',
+    taskId: 'u2',
+    taskTitle: 'Organize desk workspace',
+    taskDescription: 'Clean and organize the home office desk',
+    taskStatus: 'IN_PROGRESS',
+    taskPriority: 'LOW',
     steps: [
       { id: 'u2-1', title: 'Clear desk surface', completed: true, createdAt: new Date() },
       { id: 'u2-2', title: 'Organize cables', completed: false, createdAt: new Date() },
@@ -38,23 +42,23 @@ const mockUnlistedTasks: Task[] = [
     updatedAt: new Date(),
   },
   {
-    id: 'u3',
-    title: 'Read technical article',
-    description: 'Read about microservices architecture patterns',
+    taskId: 'u3',
+    taskTitle: 'Read technical article',
+    taskDescription: 'Read about microservices architecture patterns',
     deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
-    status: 'completed',
-    priority: 'medium',
+    taskStatus: 'COMPLETED',
+    taskPriority: 'MEDIUM',
     steps: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: 'u4',
-    title: 'Update portfolio website',
-    description: 'Add recent projects to personal portfolio',
+    taskId: 'u4',
+    taskTitle: 'Update portfolio website',
+    taskDescription: 'Add recent projects to personal portfolio',
     deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // Two weeks
-    status: 'todo',
-    priority: 'high',
+    taskStatus: 'TODO',
+    taskPriority: 'HIGH',
     steps: [
       { id: 'u4-1', title: 'Gather project screenshots', completed: false, createdAt: new Date() },
       { id: 'u4-2', title: 'Write project descriptions', completed: false, createdAt: new Date() },
@@ -66,6 +70,8 @@ const mockUnlistedTasks: Task[] = [
 ];
 
 export default function UnlistedTasksPage() {
+  const {taskService}= useApi();
+  
   const [tasks, setTasks] = useState<Task[]>(mockUnlistedTasks);
   const [currentView, setCurrentView] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,42 +81,52 @@ export default function UnlistedTasksPage() {
   const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
-        task.id === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
+        task.taskId === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
       )
     );
   };
 
   const handleTaskDelete = (taskId: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    setTasks(prevTasks => prevTasks.filter(task => task.taskId !== taskId));
   };
 
   const handleToggleStatus = (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find(t => t.taskId === taskId);
     if (task) {
-      const newStatus = task.status === 'completed' ? 'todo' : 'completed';
-      handleTaskUpdate(taskId, { status: newStatus });
+      const newStatus = task.taskStatus === 'COMPLETED' ? 'TODO' : 'COMPLETED';
+      handleTaskUpdate(taskId, { taskStatus: newStatus });
+    }
+  };
+  const handleCreateTask = async (request: CreateTaskRequest) => {
+    try {
+      const newTask = (await taskService.createTask(request)).data;
+      setTasks(prevTasks => [...prevTasks, newTask]);
+      toast.success('Task created successfully');
+    }
+    catch (error) {
+      toast.error(`Failed to create task: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   // Filter tasks based on search and filters
   const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         task.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
-    const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
+    const matchesSearch = task.taskTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         task.taskDescription?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || task.taskStatus === filterStatus;
+    const matchesPriority = filterPriority === 'all' || task.taskPriority === filterPriority;
     
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
   const taskStats = {
     total: tasks.length,
-    todo: tasks.filter(t => t.status === 'todo').length,
-    inProgress: tasks.filter(t => t.status === 'in-progress').length,
-    completed: tasks.filter(t => t.status === 'completed').length,
-    overdue: tasks.filter(t => 
-      t.deadline && 
-      new Date(t.deadline) < new Date() && 
-      t.status !== 'completed'
+    todo: tasks.filter(t => t.taskStatus === 'TODO').length,
+    inProgress: tasks.filter(t => t.taskStatus === 'IN_PROGRESS').length,
+    completed: tasks.filter(t => t.taskStatus === 'COMPLETED').length,
+    overdue: tasks.filter(t =>
+      t.deadline &&
+      new Date(t.deadline) < new Date() &&
+      t.taskStatus !== 'COMPLETED'
     ).length,
   };
 
@@ -274,23 +290,25 @@ export default function UnlistedTasksPage() {
                   onTaskUpdate={handleTaskUpdate}
                   onTaskEdit={(task) => console.log('Edit task:', task)}
                   onTaskDelete={handleTaskDelete}
+                  onTaskCreate={handleCreateTask}
                 />
               ) : currentView === 'grid' ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                   {filteredTasks.map((task) => (
                     <TaskCard
-                      key={task.id}
+                      key={task.taskId}
                       task={task}
                       onEdit={(task) => console.log('Edit task:', task)}
                       onDelete={handleTaskDelete}
                       onToggleStatus={handleToggleStatus}
                     />
                   ))}
+                  <TaskCreationCard onSubmit={handleCreateTask} />
                 </div>
               ) : (
                 <div className="space-y-3">
                   {filteredTasks.map((task) => (
-                    <div key={task.id} className="border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div key={task.taskId} className="border border-gray-200 dark:border-gray-700 rounded-lg">
                       <TaskCard
                         task={task}
                         onEdit={(task) => console.log('Edit task:', task)}
@@ -299,6 +317,9 @@ export default function UnlistedTasksPage() {
                       />
                     </div>
                   ))}
+                  <TaskCreationCard
+                    onSubmit={handleCreateTask}
+                  />
                 </div>
               )}
             </>

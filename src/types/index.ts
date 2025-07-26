@@ -1,5 +1,33 @@
 // Types for the My Day application
-
+export interface Pageable{
+  pageNumber: number;
+  pageSize: number;
+  sort: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
+  offset: number;
+  paged: boolean;
+  unpaged: boolean;
+}
+export interface Page<T> {
+  content: T[];
+  pageable: Pageable;
+  last: boolean;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  size: number;
+  number: number;
+  sort: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
+  numberOfElements: number;
+  empty: boolean;
+}
 export interface User{
   username: string;
   userPassword: string;
@@ -7,16 +35,22 @@ export interface User{
   userFullName: string;
 }
 export interface Task {
-  id: string;
-  title: string;
-  description?: string;
+  taskId: string;
+  taskTitle: string;
+  taskDescription?: string;
+  estimatedTime?: number; // in minutes
+  actualTime?: number; // in minutes
   deadline?: Date;
-  status: 'todo' | 'in-progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  listId?: string; // null if it's an unlisted task
-  steps: Step[];
   createdAt: Date;
   updatedAt: Date;
+  taskStatus: 'TODO' | 'IN_PROGRESS' | 'COMPLETED';
+  taskPriority: 'LOW' | 'MEDIUM' | 'HIGH';
+  listId?: string; // null if it's an unlisted task
+  userId?: string; // Owner of the task
+  steps: Step[];
+  totalCompletedSteps?: number;
+  totalSteps?: number;
+  progressPercentage?: number;
 }
 
 export interface Step {
@@ -27,14 +61,18 @@ export interface Step {
 }
 
 export interface List {
-  id: string;
-  title: string;
-  description?: string;
+  listId: string;
+  listTitle: string;
+  listDescription?: string;
   listCategory: 'PERSONAL' | 'WORK' | 'STUDY' | 'OTHER';
   color?: string;
-  tasks: Task[];
+  tasks?: Task[];
   createdAt: Date;
   updatedAt: Date;
+  username: string; // Owner of the list
+  completedTasksCount?: number;
+  totalTasksCount?: number;
+  progressPercentage?: number;
 }
 
 export interface MyDayTask {

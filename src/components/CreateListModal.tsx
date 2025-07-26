@@ -3,23 +3,15 @@
 import React, { useState } from 'react';
 import { CreateListRequest } from '@/types/api-request-body';
 import { useAuth } from '@/contexts/AuthContext';
+import { colorOptions } from '@/utils/color-utils';
+import { toast } from 'sonner';
 
 interface CreateListModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateListRequest) => void;
+  onSubmit: (data: CreateListRequest) => Promise<void>;
 }
 
-const colorOptions = [
-  { value: 'blue', label: 'Blue', class: 'bg-blue-500', colorHex: '#3B82F6' },
-  { value: 'green', label: 'Green', class: 'bg-green-500', colorHex: '#10B981' },
-  { value: 'purple', label: 'Purple', class: 'bg-purple-500', colorHex: '#8B5CF6' },
-  { value: 'red', label: 'Red', class: 'bg-red-500', colorHex: '#EF4444' },
-  { value: 'yellow', label: 'Yellow', class: 'bg-yellow-500', colorHex: '#F59E0B' },
-  { value: 'indigo', label: 'Indigo', class: 'bg-indigo-500', colorHex: '#6366F1' },
-  { value: 'pink', label: 'Pink', class: 'bg-pink-500', colorHex: '#EC4899' },
-  { value: 'teal', label: 'Teal', class: 'bg-teal-500', colorHex: '#14B8A6' },
-];
 
 const categoryOptions = [
   { value: 'PERSONAL', label: 'Personal', icon: '👤' },
@@ -74,6 +66,8 @@ export default function CreateListModal({ isOpen, onClose, onSubmit }: CreateLis
 
     setIsSubmitting(true);
     try {
+      console.log('Submitting form data:', formData);
+
       await onSubmit({
         ...formData,
         listTitle: formData.listTitle.trim(),
@@ -88,10 +82,12 @@ export default function CreateListModal({ isOpen, onClose, onSubmit }: CreateLis
         color: 'blue',
         username: user?.username || '',
       });
+      toast.success('List created successfully');
       setErrors({});
       onClose();
     } catch (error) {
       console.error('Error creating list:', error);
+      toast.error('Failed to create list');
     } finally {
       setIsSubmitting(false);
     }

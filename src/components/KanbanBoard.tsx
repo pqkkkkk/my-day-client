@@ -1,12 +1,15 @@
 import React from 'react';
 import { Task } from '@/types';
 import TaskCard from './TaskCard';
+import TaskCreationCard from './TaskCreationCard';
+import { CreateTaskRequest } from '@/types/api-request-body';
 
 interface KanbanBoardProps {
   tasks: Task[];
   onTaskUpdate?: (taskId: string, updates: Partial<Task>) => void;
   onTaskEdit?: (task: Task) => void;
   onTaskDelete?: (taskId: string) => void;
+  onTaskCreate: (request: CreateTaskRequest) => Promise<void>;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -14,15 +17,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onTaskUpdate,
   onTaskEdit,
   onTaskDelete,
+  onTaskCreate
 }) => {
+
   const columns = [
-    { status: 'todo', title: 'To Do', color: 'border-gray-300' },
-    { status: 'in-progress', title: 'In Progress', color: 'border-blue-300' },
-    { status: 'completed', title: 'Completed', color: 'border-green-300' },
+    { status: 'TODO', title: 'To Do', color: 'border-gray-300' },
+    { status: 'IN_PROGRESS', title: 'In Progress', color: 'border-blue-300' },
+    { status: 'COMPLETED', title: 'Completed', color: 'border-green-300' },
   ] as const;
 
   const getTasksByStatus = (status: string) => {
-    return tasks.filter(task => task.status === status);
+    return tasks.filter(task => task.taskStatus === status);
   };
 
   const handleDragStart = (e: React.DragEvent, task: Task) => {
@@ -33,13 +38,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     e.preventDefault();
   };
 
-  const handleDrop = (e: React.DragEvent, newStatus: Task['status']) => {
+  const handleDrop = (e: React.DragEvent, newStatus: Task['taskStatus']) => {
     e.preventDefault();
     const taskData = e.dataTransfer.getData('application/json');
     const task = JSON.parse(taskData) as Task;
     
-    if (task.status !== newStatus) {
-      onTaskUpdate?.(task.id, { status: newStatus });
+    if (task.taskStatus !== newStatus) {
+      onTaskUpdate?.(task.taskId, { taskStatus: newStatus });
     }
   };
 
@@ -72,18 +77,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <div className="space-y-3">
                 {columnTasks.map((task) => (
                   <div
-                    key={task.id}
+                    key={task.taskId}
                     draggable
                     onDragStart={(e) => handleDragStart(e, task)}
-                    className="cursor-move"
-                  >
+                    className="cursor-move">
                     <TaskCard
                       task={task}
                       onEdit={onTaskEdit}
                       onDelete={onTaskDelete}
                       onToggleStatus={(taskId) => {
-                        const newStatus = task.status === 'completed' ? 'todo' : 'completed';
-                        onTaskUpdate?.(taskId, { status: newStatus });
+                        const newStatus = task.taskStatus === 'COMPLETED' ? 'TODO' : 'COMPLETED';
+                        onTaskUpdate?.(taskId, { taskStatus: newStatus });
                       }}
                     />
                   </div>
@@ -99,6 +103,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   <p>No tasks in {column.title.toLowerCase()}</p>
                 </div>
               )}
+              {column.status === 'TODO' && <TaskCreationCard className='mt-3' onSubmit={onTaskCreate} />}
             </div>
           </div>
         );

@@ -1,8 +1,9 @@
 import axios, { AxiosInstance } from "axios";
-
+import { ApiError } from "next/dist/server/api-utils";
+import { toast } from "sonner";
 
 const apiClient : AxiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api",
+    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
 })
 
 apiClient.interceptors.request.use(
@@ -24,14 +25,17 @@ apiClient.interceptors.response.use(
     (response) => response,
     (error) =>{
         if (error.response) {
-            if( error.response.status === 401) {
-                console.error("Unauthorized access - redirecting to login");
-                sessionStorage.removeItem('accessToken');
-                sessionStorage.removeItem('user');
-                window.location.href = "/login";
-            } else{
-                console.error("Response error:", error.response.data);
+            const statusCode = error.response.status;
+            const data : ApiError = error.response.data;
+
+            if(statusCode >= 500){
+                toast.error(`Server error: ${data.message || "An unexpected error occurred."}`);
             }
+            else if (statusCode >= 400){
+                toast.error(`Client error: ${data.message || "An unexpected error occurred."}`);
+            }
+
+            return Promise.reject(data);
         }
         else {
             console.error("Network error:", error.message);
@@ -39,5 +43,4 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
     }
 )
-
 export default apiClient;

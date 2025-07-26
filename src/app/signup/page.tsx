@@ -105,7 +105,7 @@ export default function SignUpPage() {
       await signUp(newUser);
       
       // Redirect to main app
-      router.push('/my-day');
+      router.push('/signin');
     } catch (error) {
       console.error('Sign up error:', error);
       setErrors({ general: 'Registration failed. Please try again.' });

@@ -2,13 +2,16 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
+import { RefreshTokenRequest, SignInRequest, SignUpRequest } from '@/types/api-request-body';
+import { useApi } from './ApiContext';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (userData: User) => Promise<void>;
+  signIn: (request: SignInRequest) => Promise<void>;
+  signUp: (request: SignUpRequest) => Promise<void>;
+  refreshToken: (request: RefreshTokenRequest) => Promise<void>;
   signOut: () => void;
 }
 
@@ -27,14 +30,15 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const {authService} = useApi();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in (from localStorage)
+    // Check if user is already logged in (from sessionStorage)
     const checkAuth = () => {
       try {
-        const savedUser = localStorage.getItem('my-day-user');
+        const savedUser = sessionStorage.getItem('user');
         if (savedUser) {
           setUser(JSON.parse(savedUser));
         }
@@ -48,22 +52,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth();
   }, []);
 
-  const signIn = async (email: string, password: string): Promise<void> => {
+  const signIn = async (request: SignInRequest): Promise<void> => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, create a mock user
-      const mockUser: User = {
-        username: email.split('@')[0],
-        userEmail: email,
-        userPassword: password,
-        userFullName: 'Demo User',
-      };
+      const response = await authService.signIn(request);
+      setUser(response.data.user);
 
-      setUser(mockUser);
-      localStorage.setItem('my-day-user', JSON.stringify(mockUser));
+      sessionStorage.setItem('user', JSON.stringify(response.data.user));
+      sessionStorage.setItem('accessToken', response.data.accessToken);
+      sessionStorage.setItem('refreshToken', response.data.refreshToken);
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;
@@ -75,11 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signUp = async (userData: User): Promise<void> => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUser(userData);
-      localStorage.setItem('my-day-user', JSON.stringify(userData));
+      await authService.signUp(userData);
     } catch (error) {
       console.error('Sign up error:', error);
       throw error;
@@ -90,8 +83,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = () => {
     setUser(null);
-    localStorage.removeItem('my-day-user');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
   };
+  
+  const refreshToken = async (request: RefreshTokenRequest): Promise<void> =>{
+    setIsLoading(true);
+    try {
+      const response = await authService.refreshToken(request);
+
+      sessionStorage.setItem('accessToken', response.data.accessToken);
+      sessionStorage.setItem('refreshToken', response.data.refreshToken);
+    } catch (error) {
+      console.error('Refresh token error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const value: AuthContextType = {
     user,
@@ -99,6 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!user,
     signIn,
     signUp,
+    refreshToken,
     signOut,
   };
 

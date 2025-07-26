@@ -1,26 +1,32 @@
+"use client"
+
+import { authService, listService, taskService } from "@/api/api-services";
 import React, { createContext, ReactNode, useContext } from "react";
 
 
-
 interface ApiContextType{
-    dummyProperty: string; // Replace with actual properties and methods
+    authService: typeof authService,
+    listService: typeof listService,
+    taskService: typeof taskService
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
 
 export const ApiProvider : React.FC<{children: ReactNode}> = ({ children }) => {
-    const apiContextValue: ApiContextType = {
-        dummyProperty: "This is a dummy property" // Replace with actual implementation
-    };
+    const apiServices = {
+        authService: authService,
+        listService: listService,
+        taskService: taskService
+    }
 
     return (
-        <ApiContext.Provider value={apiContextValue}>
+        <ApiContext.Provider value={apiServices}>
             {children}
         </ApiContext.Provider>
     );
 }
 
-export const useApi = () =>{
+export const useApi = () => {
     const context = useContext(ApiContext);
 
     if (!context) {

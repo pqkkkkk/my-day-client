@@ -4,20 +4,15 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface SignInFormData {
-  username: string;
-  password: string;
-  rememberMe: boolean;
-}
+import { SignInRequest } from '@/types/api-request-body';
+import { toast } from 'sonner';
 
 export default function SignInPage() {
   const router = useRouter();
   const { signIn } = useAuth();
-  const [formData, setFormData] = useState<SignInFormData>({
+  const [formData, setFormData] = useState<SignInRequest>({
     username: '',
     password: '',
-    rememberMe: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -65,8 +60,8 @@ export default function SignInPage() {
     
     try {
       // Use the auth context signIn method
-      await signIn(formData.username, formData.password);
-      
+      await signIn(formData);
+      toast.success('Sign in successful!');
       // Redirect to main app
       router.push('/my-day');
     } catch (error) {
@@ -157,7 +152,6 @@ export default function SignInPage() {
                 <input
                   type="checkbox"
                   name="rememberMe"
-                  checked={formData.rememberMe}
                   onChange={handleInputChange}
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                   disabled={isLoading}
