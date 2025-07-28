@@ -89,6 +89,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         const newStatus = task.taskStatus === 'COMPLETED' ? 'TODO' : 'COMPLETED';
                         onTaskUpdate?.(taskId, { taskStatus: newStatus });
                       }}
+                      showProgress={true}
                     />
                   </div>
                 ))}

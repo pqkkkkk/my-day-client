@@ -117,26 +117,26 @@ export const listService = {
             listId: "list1",
             steps: [
               {
-                id: "l1-t1-s1",
-                title: "Design mockup",
+                stepId: "l1-t1-s1",
+                stepTitle: "Design mockup",
                 completed: true,
                 createdAt: new Date(),
               },
               {
-                id: "l1-t1-s2",
-                title: "Code HTML structure",
+                stepId: "l1-t1-s2",
+                stepTitle: "Code HTML structure",
                 completed: true,
                 createdAt: new Date(),
               },
               {
-                id: "l1-t1-s3",
-                title: "Add CSS styling",
+                stepId: "l1-t1-s3",
+                stepTitle: "Add CSS styling",
                 completed: false,
                 createdAt: new Date(),
               },
               {
-                id: "l1-t1-s4",
-                title: "Add JavaScript interactions",
+                stepId: "l1-t1-s4",
+                stepTitle: "Add JavaScript interactions",
                 completed: false,
                 createdAt: new Date(),
               },
@@ -193,20 +193,20 @@ export const listService = {
             listId: "list2",
             steps: [
               {
-                id: "l2-t1-s1",
-                title: "Brainstorm content ideas",
+                stepId: "l2-t1-s1",
+                stepTitle: "Brainstorm content ideas",
                 completed: true,
                 createdAt: new Date(),
               },
               {
-                id: "l2-t1-s2",
-                title: "Create graphics",
+                stepId: "l2-t1-s2",
+                stepTitle: "Create graphics",
                 completed: false,
                 createdAt: new Date(),
               },
               {
-                id: "l2-t1-s3",
-                title: "Write captions",
+                stepId: "l2-t1-s3",
+                stepTitle: "Write captions",
                 completed: false,
                 createdAt: new Date(),
               },
@@ -251,20 +251,20 @@ export const listService = {
             listId: "list3",
             steps: [
               {
-                id: "l3-t1-s1",
-                title: "Watch video lectures",
+                stepId: "l3-t1-s1",
+                stepTitle: "Watch video lectures",
                 completed: true,
                 createdAt: new Date(),
               },
               {
-                id: "l3-t1-s2",
-                title: "Complete exercises",
+                stepId: "l3-t1-s2",
+                stepTitle: "Complete exercises",
                 completed: false,
                 createdAt: new Date(),
               },
               {
-                id: "l3-t1-s3",
-                title: "Build final project",
+                stepId: "l3-t1-s3",
+                stepTitle: "Build final project",
                 completed: false,
                 createdAt: new Date(),
               },
@@ -319,3 +319,5 @@ export const listService = {
     return response;
   },
 };
+
+export const taskService = {}

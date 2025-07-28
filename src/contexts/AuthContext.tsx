@@ -13,6 +13,7 @@ interface AuthContextType {
   signUp: (request: SignUpRequest) => Promise<void>;
   refreshToken: (request: RefreshTokenRequest) => Promise<void>;
   signOut: () => void;
+  getUser: () => User | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -102,6 +103,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(false);
     }
   }
+  const getUser = () =>{
+    return JSON.parse(sessionStorage.getItem('user') || 'null') as User | null;
+  }
 
   const value: AuthContextType = {
     user,
@@ -111,6 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     refreshToken,
     signOut,
+    getUser
   };
 
   return (
