@@ -12,12 +12,12 @@ const mockMyDayTasks: Task[] = [
     taskTitle: 'Review project proposal',
     taskDescription: 'Review and provide feedback on the new project proposal',
     deadline: new Date(),
-    taskStatus: 'todo',
-    taskPriority: 'high',
+    taskStatus: 'TODO',
+    taskPriority: 'HIGH',
     steps: [
-      { id: '1-1', title: 'Read document', completed: true, createdAt: new Date() },
-      { id: '1-2', title: 'Analyze requirements', completed: false, createdAt: new Date() },
-      { id: '1-3', title: 'Provide feedback', completed: false, createdAt: new Date() },
+      { stepId: '1-1', stepTitle: 'Read document', completed: true, createdAt: new Date() },
+      { stepId: '1-2', stepTitle: 'Analyze requirements', completed: false, createdAt: new Date() },
+      { stepId: '1-3', stepTitle: 'Provide feedback', completed: false, createdAt: new Date() },
     ],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -27,12 +27,12 @@ const mockMyDayTasks: Task[] = [
     taskTitle: 'Finish UI components',
     taskDescription: 'Complete the remaining UI components for the dashboard',
     deadline: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-    taskStatus: 'in-progress',
-    taskPriority: 'medium',
+    taskStatus: 'IN_PROGRESS',
+    taskPriority: 'MEDIUM',
     steps: [
-      { id: '2-1', title: 'Create TaskCard component', completed: true, createdAt: new Date() },
-      { id: '2-2', title: 'Create Calendar component', completed: true, createdAt: new Date() },
-      { id: '2-3', title: 'Create Sidebar component', completed: false, createdAt: new Date() },
+      { stepId: '2-1', stepTitle: 'Create TaskCard component', completed: true, createdAt: new Date() },
+      { stepId: '2-2', stepTitle: 'Create Calendar component', completed: true, createdAt: new Date() },
+      { stepId: '2-3', stepTitle: 'Create Sidebar component', completed: false, createdAt: new Date() },
     ],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -57,13 +57,13 @@ export default function MyDayPage() {
   const handleToggleStatus = (taskId: string) => {
     const task = tasks.find(t => t.taskId === taskId);
     if (task) {
-      const newStatus = task.taskStatus === 'completed' ? 'todo' : 'completed';
+      const newStatus = task.taskStatus === 'COMPLETED' ? 'TODO' : 'COMPLETED';
       handleTaskUpdate(taskId, { taskStatus: newStatus });
     }
   };
 
-  const upcomingTasks = tasks.filter(task => task.taskStatus !== 'completed');
-  const completedTasks = tasks.filter(task => task.taskStatus === 'completed');
+  const upcomingTasks = tasks.filter(task => task.taskStatus !== 'COMPLETED');
+  const completedTasks = tasks.filter(task => task.taskStatus === 'COMPLETED');
 
   return (
     <AppLayout>

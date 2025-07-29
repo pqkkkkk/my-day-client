@@ -54,8 +54,8 @@ export interface Task {
 }
 
 export interface Step {
-  id: string;
-  title: string;
+  stepId: string;
+  stepTitle: string;
   completed: boolean;
   createdAt: Date;
 }

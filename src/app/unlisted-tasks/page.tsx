@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import TaskCard from '@/components/TaskCard';
 import ViewToggle from '@/components/ViewToggle';
 import KanbanBoard from '@/components/KanbanBoard';
@@ -8,8 +8,12 @@ import { Task, ViewMode } from '@/types';
 import AppLayout from '@/components/AppLayout';
 import TaskCreationCard from '@/components/TaskCreationCard';
 import { useApi } from '@/contexts/ApiContext';
-import { CreateTaskRequest } from '@/types/api-request-body';
+import { CreateTaskRequest, TaskFilterObject } from '@/types/api-request-body';
 import { toast } from 'sonner';
+import { useQuery } from '@/hooks/use-query';
+import { useFetchList } from '@/hooks/use-fetch-list';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 // Mock data for unlisted tasks
 const mockUnlistedTasks: Task[] = [
@@ -21,9 +25,9 @@ const mockUnlistedTasks: Task[] = [
     taskStatus: 'TODO',
     taskPriority: 'MEDIUM',
     steps: [
-      { id: 'u1-1', title: 'Install Rust', completed: true, createdAt: new Date() },
-      { id: 'u1-2', title: 'Read documentation', completed: false, createdAt: new Date() },
-      { id: 'u1-3', title: 'Build first project', completed: false, createdAt: new Date() },
+      { stepId: 'u1-1', stepTitle: 'Install Rust', completed: true, createdAt: new Date() },
+      { stepId: 'u1-2', stepTitle: 'Read documentation', completed: false, createdAt: new Date() },
+      { stepId: 'u1-3', stepTitle: 'Build first project', completed: false, createdAt: new Date() },
     ],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -35,8 +39,8 @@ const mockUnlistedTasks: Task[] = [
     taskStatus: 'IN_PROGRESS',
     taskPriority: 'LOW',
     steps: [
-      { id: 'u2-1', title: 'Clear desk surface', completed: true, createdAt: new Date() },
-      { id: 'u2-2', title: 'Organize cables', completed: false, createdAt: new Date() },
+      { stepId: 'u2-1', stepTitle: 'Clear desk surface', completed: true, createdAt: new Date() },
+      { stepId: 'u2-2', stepTitle: 'Organize cables', completed: false, createdAt: new Date() },
     ],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -60,9 +64,9 @@ const mockUnlistedTasks: Task[] = [
     taskStatus: 'TODO',
     taskPriority: 'HIGH',
     steps: [
-      { id: 'u4-1', title: 'Gather project screenshots', completed: false, createdAt: new Date() },
-      { id: 'u4-2', title: 'Write project descriptions', completed: false, createdAt: new Date() },
-      { id: 'u4-3', title: 'Update resume', completed: false, createdAt: new Date() },
+      { stepId: 'u4-1', stepTitle: 'Gather project screenshots', completed: false, createdAt: new Date() },
+      { stepId: 'u4-2', stepTitle: 'Write project descriptions', completed: false, createdAt: new Date() },
+      { stepId: 'u4-3', stepTitle: 'Update resume', completed: false, createdAt: new Date() },
     ],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -70,24 +74,37 @@ const mockUnlistedTasks: Task[] = [
 ];
 
 export default function UnlistedTasksPage() {
+  const navigate = useRouter();
+  const {user, isLoading} = useAuth();
   const {taskService}= useApi();
   
-  const [tasks, setTasks] = useState<Task[]>(mockUnlistedTasks);
+  useEffect(() => {
+    if (isLoading) return; // Wait for auth state to be resolved
+
+    if (!user) {
+      // Redirect to login or show an error
+      navigate.push('/signin');
+      return;
+    }
+
+  }, [user, navigate, isLoading]);
+
+  const {query: taskQuery, updateQuery, resetQuery} = useQuery<TaskFilterObject>({
+    currentPage: 1,
+    pageSize: 10,
+    sortBy: 'createdAt',
+    sortDirection: 'DESC',
+    username: user?.username
+  }, true); // Enable auto username update
+  const {data: tasks} = useFetchList<TaskFilterObject, Task>('task', taskQuery);
+
   const [currentView, setCurrentView] = useState<ViewMode>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterPriority, setFilterPriority] = useState<string>('all');
 
   const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.taskId === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
-      )
-    );
+
   };
 
   const handleTaskDelete = (taskId: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.taskId !== taskId));
   };
 
   const handleToggleStatus = (taskId: string) => {
@@ -100,23 +117,12 @@ export default function UnlistedTasksPage() {
   const handleCreateTask = async (request: CreateTaskRequest) => {
     try {
       const newTask = (await taskService.createTask(request)).data;
-      setTasks(prevTasks => [...prevTasks, newTask]);
       toast.success('Task created successfully');
     }
     catch (error) {
       toast.error(`Failed to create task: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
-
-  // Filter tasks based on search and filters
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.taskTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         task.taskDescription?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || task.taskStatus === filterStatus;
-    const matchesPriority = filterPriority === 'all' || task.taskPriority === filterPriority;
-    
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
 
   const taskStats = {
     total: tasks.length,
@@ -203,8 +209,8 @@ export default function UnlistedTasksPage() {
               <input
                 type="text"
                 placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={taskQuery.taskTitle || ''}
+                onChange={(e) => updateQuery({ taskTitle: e.target.value })}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -212,25 +218,27 @@ export default function UnlistedTasksPage() {
             {/* Filters */}
             <div className="flex items-center gap-3">
               <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                value={taskQuery.taskStatus}
+                onChange={(e) => 
+                  updateQuery({ taskStatus: e.target.value as 'TODO' | 'IN_PROGRESS' | 'COMPLETED' })}
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Status</option>
-                <option value="todo">To Do</option>
-                <option value="in-progress">In Progress</option>
-                <option value="completed">Completed</option>
+                <option value="ALL">All Status</option>
+                <option value="TODO">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
               </select>
 
               <select
-                value={filterPriority}
-                onChange={(e) => setFilterPriority(e.target.value)}
+                value={taskQuery.taskPriority}
+                onChange={(e) =>
+                   updateQuery({ taskPriority: e.target.value as 'LOW' | 'MEDIUM' | 'HIGH' })}
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Priority</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
+                <option value="ALL">All Priority</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
               </select>
             </div>
           </div>
@@ -241,9 +249,9 @@ export default function UnlistedTasksPage() {
 
         {/* Tasks Display */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          {filteredTasks.length === 0 ? (
+          {tasks.length === 0 ? (
             <div className="text-center py-12">
-              {searchQuery || filterStatus !== 'all' || filterPriority !== 'all' ? (
+              {taskQuery.taskTitle != undefined || taskQuery.taskStatus !== undefined || taskQuery.taskPriority !== undefined ? (
                 <>
                   <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -256,9 +264,7 @@ export default function UnlistedTasksPage() {
                   </p>
                   <button
                     onClick={() => {
-                      setSearchQuery('');
-                      setFilterStatus('all');
-                      setFilterPriority('all');
+                      resetQuery();
                     }}
                     className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                   >
@@ -286,7 +292,7 @@ export default function UnlistedTasksPage() {
             <>
               {currentView === 'kanban' ? (
                 <KanbanBoard
-                  tasks={filteredTasks}
+                  tasks={tasks}
                   onTaskUpdate={handleTaskUpdate}
                   onTaskEdit={(task) => console.log('Edit task:', task)}
                   onTaskDelete={handleTaskDelete}
@@ -294,26 +300,28 @@ export default function UnlistedTasksPage() {
                 />
               ) : currentView === 'grid' ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredTasks.map((task) => (
+                  {tasks.map((task) => (
                     <TaskCard
                       key={task.taskId}
                       task={task}
                       onEdit={(task) => console.log('Edit task:', task)}
                       onDelete={handleTaskDelete}
                       onToggleStatus={handleToggleStatus}
+                      showProgress={true}
                     />
                   ))}
                   <TaskCreationCard onSubmit={handleCreateTask} />
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {filteredTasks.map((task) => (
+                  {tasks.map((task) => (
                     <div key={task.taskId} className="border border-gray-200 dark:border-gray-700 rounded-lg">
                       <TaskCard
                         task={task}
                         onEdit={(task) => console.log('Edit task:', task)}
                         onDelete={handleTaskDelete}
                         onToggleStatus={handleToggleStatus}
+                        showProgress={true}
                       />
                     </div>
                   ))}
@@ -327,9 +335,9 @@ export default function UnlistedTasksPage() {
         </div>
 
         {/* Results count */}
-        {filteredTasks.length > 0 && (
+        {tasks.length > 0 && (
           <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-            Showing {filteredTasks.length} of {tasks.length} tasks
+            Showing {tasks.length} of {tasks.length} tasks
           </div>
         )}
       </div>

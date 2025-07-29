@@ -54,4 +54,15 @@ export interface TaskFilterObject {
     createdAtFrom?: string;
     createdAtTo?: string;
     listId?: string; // null if it's an unlisted task
+    username?: string; // null if it's an unlisted task
+}
+
+export interface CreateStepRequest{
+    stepTitle: string;
+    taskId: string; // ID of the task to which this step belongs
+}
+export interface UpdateStepRequest {
+    stepTitle: string;
+    taskId: string; // ID of the task to which this step belongs
+    completed?: boolean;
 }

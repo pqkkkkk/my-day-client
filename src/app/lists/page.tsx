@@ -214,6 +214,7 @@ function ListTasksView({selectedList, onBack}: ListTasksViewProps) {
                     onEdit={(task) => console.log('Edit task:', task)}
                     onDelete={handleTaskDelete}
                     onToggleStatus={handleToggleStatus}
+                    showProgress={true} // Show progress bar in grid view
                   />
                 ))}
                 {/* Add Task Card - Shows last in grid */}
@@ -231,6 +232,8 @@ function ListTasksView({selectedList, onBack}: ListTasksViewProps) {
                       onEdit={(task) => console.log('Edit task:', task)}
                       onDelete={handleTaskDelete}
                       onToggleStatus={handleToggleStatus}
+                      showList={true} // Show list name in list view
+                      showProgress={true} // Show progress bar in list view
                     />
                   </div>
                 ))}

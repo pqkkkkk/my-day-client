@@ -1,13 +1,14 @@
 "use client"
 
-import { authService, listService, taskService } from "@/api/api-services";
+import { authService, listService, stepService, taskService } from "@/api/api-services";
 import React, { createContext, ReactNode, useContext } from "react";
 
 
 interface ApiContextType{
     authService: typeof authService,
     listService: typeof listService,
-    taskService: typeof taskService
+    taskService: typeof taskService,
+    stepService: typeof stepService
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
@@ -16,7 +17,8 @@ export const ApiProvider : React.FC<{children: ReactNode}> = ({ children }) => {
     const apiServices = {
         authService: authService,
         listService: listService,
-        taskService: taskService
+        taskService: taskService,
+        stepService: stepService
     }
 
     return (
