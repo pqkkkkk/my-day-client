@@ -1,12 +1,8 @@
+import { Task } from '@/types';
 import React, { useState } from 'react';
 
 interface CalendarProps {
-  tasks?: Array<{
-    id: string;
-    title: string;
-    deadline: Date;
-    status: 'todo' | 'in-progress' | 'completed';
-  }>;
+  tasks?: Task[];
 }
 
 const Calendar: React.FC<CalendarProps> = ({ tasks = [] }) => {
@@ -35,7 +31,7 @@ const Calendar: React.FC<CalendarProps> = ({ tasks = [] }) => {
   const getTasksForDate = (day: number) => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     return tasks.filter(task => {
-      const taskDate = new Date(task.deadline);
+      const taskDate = new Date(task.deadline || '');
       return taskDate.toDateString() === date.toDateString();
     });
   };
@@ -128,7 +124,7 @@ const Calendar: React.FC<CalendarProps> = ({ tasks = [] }) => {
             const dayTasks = getTasksForDate(day);
             const hasDeadlines = dayTasks.length > 0;
             const hasOverdueTasks = dayTasks.some(task => 
-              new Date(task.deadline) < today && task.status !== 'completed'
+              new Date(task.deadline || '') < today && task.taskStatus !== 'COMPLETED'
             );
 
             return (
@@ -157,16 +153,16 @@ const Calendar: React.FC<CalendarProps> = ({ tasks = [] }) => {
                       key={taskIndex}
                       className={`
                         text-xs px-1 py-0.5 rounded truncate
-                        ${task.status === 'completed' 
+                        ${task.taskStatus === 'COMPLETED' 
                           ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200' 
                           : hasOverdueTasks 
                             ? 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200'
                             : 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200'
                         }
                       `}
-                      title={task.title}
+                      title={task.taskTitle}
                     >
-                      {task.title}
+                      {task.taskTitle}
                     </div>
                   ))}
                   
