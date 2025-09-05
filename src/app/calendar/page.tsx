@@ -11,8 +11,8 @@ const mockTasksWithDeadlines: Task[] = [
     taskTitle: 'Project Review Meeting',
     taskDescription: 'Review Q1 project outcomes',
     deadline: new Date(2025, 6, 20), // July 20, 2025
-    taskStatus: 'todo',
-    taskPriority: 'high',
+    taskStatus: 'TODO',
+    taskPriority: 'HIGH',
     steps: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -22,8 +22,8 @@ const mockTasksWithDeadlines: Task[] = [
     taskTitle: 'Submit Monthly Report',
     taskDescription: 'Compile and submit monthly performance report',
     deadline: new Date(2025, 6, 25), // July 25, 2025
-    taskStatus: 'in-progress',
-    taskPriority: 'medium',
+    taskStatus: 'IN_PROGRESS',
+    taskPriority: 'MEDIUM',
     steps: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -33,8 +33,8 @@ const mockTasksWithDeadlines: Task[] = [
     taskTitle: 'Client Presentation',
     taskDescription: 'Present new features to client',
     deadline: new Date(2025, 6, 15), // July 15, 2025 (overdue)
-    taskStatus: 'todo',
-    taskPriority: 'high',
+    taskStatus: 'TODO',
+    taskPriority: 'HIGH',
     steps: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -44,8 +44,8 @@ const mockTasksWithDeadlines: Task[] = [
     taskTitle: 'Code Review',
     taskDescription: 'Review team member\'s pull request',
     deadline: new Date(2025, 6, 18), // July 18, 2025
-    taskStatus: 'completed',
-    taskPriority: 'medium',
+    taskStatus: 'COMPLETED',
+    taskPriority: 'MEDIUM',
     steps: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -53,22 +53,26 @@ const mockTasksWithDeadlines: Task[] = [
 ];
 
 export default function CalendarPage() {
-  const tasksWithDeadlines = mockTasksWithDeadlines.map(task => ({
-    id: task.taskId,
-    title: task.taskTitle,
+  const tasksWithDeadlines : Task[] = mockTasksWithDeadlines.map(task => ({
+    taskId: task.taskId,
+    taskTitle: task.taskTitle,
     deadline: task.deadline!,
-    status: task.taskStatus,
+    taskStatus: task.taskStatus,
+    taskPriority: task.taskPriority,
+    steps: task.steps,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
   }));
 
-  const upcomingDeadlines = mockTasksWithDeadlines
-    .filter(task => task.deadline && task.taskStatus !== 'completed')
+  const upcomingDeadlines = tasksWithDeadlines
+    .filter(task => task.deadline && task.taskStatus !== 'COMPLETED')
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
     .slice(0, 5);
 
-  const overdueCount = mockTasksWithDeadlines.filter(task => 
+  const overdueCount = tasksWithDeadlines.filter(task => 
     task.deadline && 
     new Date(task.deadline) < new Date() && 
-    task.taskStatus !== 'completed'
+    task.taskStatus !== 'COMPLETED'
   ).length;
 
   return (
@@ -188,9 +192,9 @@ export default function CalendarPage() {
                       </h4>
                       <span className={`
                         text-xs px-2 py-1 rounded-full font-medium
-                        ${task.taskPriority === 'high' 
+                        ${task.taskPriority === 'HIGH' 
                           ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                          : task.taskPriority === 'medium'
+                          : task.taskPriority === 'MEDIUM'
                           ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                           : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                         }
